@@ -1,0 +1,48 @@
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Net.NetworkInformation;
+using System.Net;
+
+namespace UbntDiscovery.Test
+{
+    [TestClass]
+    public class Tests
+    {
+
+        readonly byte[] SamplePacket  = {
+	                                    0x01, 0x00, 0x00, 0x71, 0x02, 0x00, 0x0A, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 
+	                                    0x39, 0x01, 0x00, 0x06, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x0A, 0x00, 0x04, 0x00, 0x06, 0xC4, 
+	                                    0x5D, 0x0B, 0x00, 0x0F, 0x68, 0x6F, 0x73, 0x74, 0x6E, 0x61, 0x6D, 0x65, 0x68, 0x6F, 0x73, 0x74, 
+	                                    0x6E, 0x61, 0x6D, 0x0C, 0x00, 0x03, 0x4E, 0x35, 0x4E, 0x0D, 0x00, 0x0B, 0x73, 0x73, 0x69, 0x64, 
+	                                    0x73, 0x73, 0x69, 0x64, 0x73, 0x73, 0x69, 0x0E, 0x00, 0x01, 0x02, 0x03, 0x00, 0x22, 0x58, 0x4D, 
+	                                    0x2E, 0x61, 0x72, 0x37, 0x32, 0x34, 0x30, 0x2E, 0x76, 0x35, 0x2E, 0x35, 0x2E, 0x33, 0x2E, 0x31, 
+	                                    0x34, 0x37, 0x36, 0x33, 0x2E, 0x31, 0x32, 0x31, 0x30, 0x31, 0x32, 0x2E, 0x31, 0x37, 0x31, 0x36, 
+	                                    0x10, 0x00, 0x02, 0xE8, 0x05
+                                    };
+
+        [TestMethod]
+        public void PacketDecoder()
+        {
+            Device device = new Device()
+            {
+                Firmware = "XM.ar7240.v5.5.3.14763.121012.1716",
+                Hostname = "hostnamehostnam",
+                Platform = "N5N",
+                SSID = "ssidssidssi",
+                Uptime = new TimeSpan(5, 3, 11, 25)
+            };
+
+            device.Addresses.Add(new DeviceAddress(IPAddress.Parse("54.55.56.57"), PhysicalAddress.Parse("303132333435")));
+
+            DiscoveryPacket dpack = new DiscoveryPacket(SamplePacket);
+            Device device2  = dpack.DecodePacket();
+
+            Assert.AreEqual(device.Firmware, device2.Firmware);
+            Assert.AreEqual(device.Hostname, device2.Hostname);
+            Assert.AreEqual(device.FirstAddress, device.FirstAddress);
+            Assert.AreEqual(device.Platform, device2.Platform);
+            Assert.AreEqual(device.SSID, device2.SSID);
+            Assert.AreEqual(device.Uptime, device2.Uptime);
+        }
+    }
+}
