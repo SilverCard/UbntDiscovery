@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -22,12 +16,17 @@ namespace UbntDiscovery
         {
             Devices = new ObservableCollection<Device>();
             MainWindow = mainWindow;
-            DeviceDiscovery = new DeviceDiscovery(this.AddDevice);
-        }  
+            DeviceDiscovery = new DeviceDiscovery();
+            DeviceDiscovery.DeviceDiscovered += DeviceDiscovery_DeviceDiscovered;
+        }
+
+        private void DeviceDiscovery_DeviceDiscovered(Device device)
+        {
+            AddDevice(device);
+        }
 
         public void Scan()
-        {
-          
+        {         
 
             try
             {

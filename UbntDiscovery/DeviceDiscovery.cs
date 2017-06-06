@@ -1,16 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Text;
 
 namespace UbntDiscovery
 {
     public class DeviceDiscovery
     {
-        public Action<Device> DiscoveryCallback { get; set; }
+        public delegate void DeviceDiscoveredEventHandler(Device device);
+
+        public event DeviceDiscoveredEventHandler DeviceDiscovered;
+
+        protected virtual void OnDeviceDiscovered(Device e)
+        {
+            if (DeviceDiscovered != null)
+                DeviceDiscovered(e);
+        }
+        
         public Boolean IsScanning { get; set; }
 
         private UdpClient _UdpClient;
@@ -34,18 +40,6 @@ namespace UbntDiscovery
 
         public DeviceDiscovery()
         {
-            Init();
-        }
-
-        public DeviceDiscovery(Action<Device> discoveryCallback)
-        {
-            Init();
-            DiscoveryCallback = discoveryCallback;            
-        }
-
-        private void Init()
-        {
-            DiscoveryCallback = null;
             IsScanning = false;
             _PacketHash = new HashSet<ulong>();
         }
@@ -61,10 +55,9 @@ namespace UbntDiscovery
 
             Boolean result = _PacketHash.Add(Utils.CalculateHash(receiveBytes));
 
-            if (DiscoveryCallback != null && result)
-            {
-                DiscoveryCallback(device);
-            }
+            if (result)            
+                OnDeviceDiscovered(device);
+            
 
             // ReceiveNext
             ReceivePacket();
