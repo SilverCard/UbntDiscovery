@@ -48,14 +48,14 @@ namespace UbntDiscovery
             this.Model.ClearDevices();
         }
 
-        private void ScanClick(object sender, RoutedEventArgs e)
+        private async void ScanClick(object sender, RoutedEventArgs e)
         {
-            this.Model.Scan();
+            await this.Model.ScanAsync();
         }
 
-        private void Window_ContentRendered(object sender, EventArgs e)
+        private async void Window_ContentRendered(object sender, EventArgs e)
         {
-            this.Model.Scan();
+            await this.Model.ScanAsync();
         }
     }
 }

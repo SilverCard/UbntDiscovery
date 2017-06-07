@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace UbntDiscovery
 {
@@ -16,10 +19,8 @@ namespace UbntDiscovery
             if (DeviceDiscovered != null)
                 DeviceDiscovered(e);
         }
-        
-        public Boolean IsScanning { get; set; }
 
-        private UdpClient _UdpClient;
+        public Boolean IsScanning { get; set; } 
 
         /// <summary>
         /// Endpoint to listen
@@ -42,55 +43,59 @@ namespace UbntDiscovery
         {
             IsScanning = false;
             _PacketHash = new HashSet<ulong>();
-        }
-
-        public void ReceiveCallback(IAsyncResult ar)
-        {
-            if (!IsScanning) return;
-
-            Byte[] receiveBytes = _UdpClient.EndReceive(ar, ref _EP1);
-
-            DiscoveryPacket dpack = new DiscoveryPacket(receiveBytes);
-            Device device = dpack.DecodePacket();
-
-            Boolean result = _PacketHash.Add(Utils.CalculateHash(receiveBytes));
-
-            if (result)            
-                OnDeviceDiscovered(device);
-            
-
-            // ReceiveNext
-            ReceivePacket();
-        }
-
-        public void ReceivePacket()
-        {
-            _UdpClient.BeginReceive(new AsyncCallback(this.ReceiveCallback), null);
-        }
-
-        public void BeginDiscoverDevices()
-        {
-
             _EP1 = new IPEndPoint(IPAddress.Any, 2048);
             _EP2 = new IPEndPoint(IPAddress.Broadcast, 10001);
-            _UdpClient = new UdpClient(_EP1);
-            _UdpClient.EnableBroadcast = true;
-            _UdpClient.Send(_Datagram, _Datagram.Length, _EP2);
-            _UdpClient.EnableBroadcast = false;
-
-            ReceivePacket();
-            IsScanning = true;
         }
 
-        public void EndDiscoverDevices()
+        public async Task DiscoveryAsync(CancellationToken ct)
         {
-            if (!IsScanning) return;
 
-            IsScanning = false;
+            var udpClient = new UdpClient(_EP1);
+            udpClient.EnableBroadcast = true;
+            await udpClient.SendAsync(_Datagram, _Datagram.Length, _EP2);
+            udpClient.EnableBroadcast = false;
+            ct.Register(() => udpClient.Close() );
 
+
+            while (!ct.IsCancellationRequested)
+            {
+                UdpReceiveResult receiveResult;
+
+                try
+                {
+                    receiveResult = await udpClient.ReceiveAsync();
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+
+                DiscoveryPacket dpack = new DiscoveryPacket(receiveResult.Buffer);
+                Device device = dpack.DecodePacket();
+
+                Boolean result = _PacketHash.Add(Utils.CalculateHash(receiveResult.Buffer));
+
+                if (result)
+                    OnDeviceDiscovered(device);
+
+            }
+
+            udpClient.Close();
             _PacketHash.Clear();
-            _UdpClient.Close();            
 
         }
+
+        //public void BeginDiscoverDevices()
+        //{
+        //    IsScanning = true;
+        //    CancellationTokenSource cts = new CancellationTokenSource();
+        //    DiscoveryTask(cts.Token);
+        //}
+
+        //public void EndDiscoverDevices()
+        //{
+        //    if (!IsScanning) return;
+        //    IsScanning = false;
+        //}
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -11,13 +12,15 @@ namespace UbntDiscovery
         public ObservableCollection<Device> Devices { get; private set; }
         public DeviceDiscovery DeviceDiscovery { get; private set; }
         public MainWindow MainWindow { get; private set; }
+        private CancellationTokenSource _cts;
+        private Task discoveryTask;
 
         public MainWindowModel(MainWindow mainWindow)
         {
             Devices = new ObservableCollection<Device>();
             MainWindow = mainWindow;
             DeviceDiscovery = new DeviceDiscovery();
-            DeviceDiscovery.DeviceDiscovered += DeviceDiscovery_DeviceDiscovered;
+            DeviceDiscovery.DeviceDiscovered += DeviceDiscovery_DeviceDiscovered;        
         }
 
         private void DeviceDiscovery_DeviceDiscovered(Device device)
@@ -25,44 +28,43 @@ namespace UbntDiscovery
             AddDevice(device);
         }
 
-        public void Scan()
-        {         
+        public async Task ScanAsync()
+        {
+            if (discoveryTask != null && (discoveryTask.Status == TaskStatus.WaitingForActivation || discoveryTask.Status == TaskStatus.Running) )
+            {
+                _cts.Cancel();
+                Devices.Clear();
+            }
 
             try
             {
-                if (!DeviceDiscovery.IsScanning)
-                {           
-                    DeviceDiscovery.BeginDiscoverDevices();
-                }
-                else
-                {
-                    DeviceDiscovery.EndDiscoverDevices();
-                    Thread.Sleep(100);
-                    Devices.Clear();
-                    DeviceDiscovery.BeginDiscoverDevices();
-                }
+                var cts = new CancellationTokenSource();
+                _cts = cts;
+                discoveryTask = DeviceDiscovery.DiscoveryAsync(_cts.Token).ContinueWith((t) => cts.Dispose());
+
+                await discoveryTask;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 MessageBox.Show(e.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
 
         }
 
         public void ClearDevices()
         {
-            DeviceDiscovery.EndDiscoverDevices();
+            if (_cts != null) _cts.Cancel();
             Devices.Clear();
         }
 
         public void AddDevice(Device device)
         {
-            this.MainWindow.Dispatcher.Invoke(DispatcherPriority.Background, new Action(
-            () =>
+            MainWindow.Dispatcher.Invoke(() =>
             {
                 Devices.Add(device);
 
-            }));
+            });
         }
 
 
