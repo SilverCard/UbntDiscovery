@@ -67,9 +67,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="DeviceAddress.cs" />
-    <Compile Include="DeviceDiscovery.cs" />
-    <Compile Include="DiscoveryPacket.cs" />
+    <Compile Include="Discovery\BroadcastUdpClient.cs" />
+    <Compile Include="Discovery\DeviceAddress.cs" />
+    <Compile Include="Discovery\DeviceDiscovery.cs" />
+    <Compile Include="Discovery\DiscoveryPacket.cs" />
     <Compile Include="Utils.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -79,7 +80,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Device.cs" />
+    <Compile Include="Discovery\Device.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

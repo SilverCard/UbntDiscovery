@@ -23,16 +23,10 @@ namespace UbntDiscovery
         public Boolean IsScanning { get; set; } 
 
         /// <summary>
-        /// Endpoint to listen
-        /// </summary>
-        private IPEndPoint _EP1;
-
-        /// <summary>
         /// Endpoint to broadcast
         /// </summary>
         private IPEndPoint _EP2;
 
-        private HashSet<ulong> _PacketHash;
 
         /// <summary>
         /// Packet data to broadcast
@@ -42,20 +36,19 @@ namespace UbntDiscovery
         public DeviceDiscovery()
         {
             IsScanning = false;
-            _PacketHash = new HashSet<ulong>();
-            _EP1 = new IPEndPoint(IPAddress.Any, 2048);
             _EP2 = new IPEndPoint(IPAddress.Broadcast, 10001);
         }
 
-        public async Task DiscoveryAsync(CancellationToken ct)
+        public async Task DiscoveryAsync(CancellationToken ct, IPAddress interfaceAddress)
         {
-
-            var udpClient = new UdpClient(_EP1);
-            udpClient.EnableBroadcast = true;
+            IPEndPoint interfaceEndpoint = new IPEndPoint(interfaceAddress, 2048);
+            var udpClient = new BroadcastUdpClient(interfaceEndpoint);
+            //udpClient.EnableBroadcast = true;
             await udpClient.SendAsync(_Datagram, _Datagram.Length, _EP2);
             udpClient.EnableBroadcast = false;
             ct.Register(() => udpClient.Close() );
-
+       
+            HashSet<ulong> packetHash = new HashSet<ulong>();
 
             while (!ct.IsCancellationRequested)
             {
@@ -73,15 +66,16 @@ namespace UbntDiscovery
                 DiscoveryPacket dpack = new DiscoveryPacket(receiveResult.Buffer);
                 Device device = dpack.DecodePacket();
 
-                Boolean result = _PacketHash.Add(Utils.CalculateHash(receiveResult.Buffer));
+                Boolean result = packetHash.Add(Utils.CalculateHash(receiveResult.Buffer));
 
                 if (result)
+                {
                     OnDeviceDiscovered(device);
-
+                }
             }
 
             udpClient.Close();
-            _PacketHash.Clear();
+            packetHash.Clear();
 
         }
 

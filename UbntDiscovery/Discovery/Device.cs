@@ -47,7 +47,7 @@ namespace UbntDiscovery
         { "ACP", "airCam PRO" }, { "AirCamPRO", "airCam PRO" }, { "AirCamDome", "airCam Dome" }, { "AirCamMini", "airCam Mini" }, 
         { "AirCam", "airCam" }, { "NVR", "airVision NVR" }, { "ACD", "airCam Dome" }, { "ACM", "airCam Mini" }, { "AC", "airCam" }, 
         { "TSW-5-POE", "TOUGHSwitch 5 PoE" }, { "TSW-8-POE", "TOUGHSwitch 8 PoE" }, { "TSW-8", "TOUGHSwitch 8" },
-        { "TSW-PoE PRO", "TOUGHSwitch PoE PRO" }, { "TSW-PoE", "TOUGHSwitch PoE" } };
+        { "TSW-PoE PRO", "TOUGHSwitch PoE PRO" }, { "TSW-PoE", "TOUGHSwitch PoE" }, { "P5B-400", "M5 NanoBeam 400" } };
 
         public Device()
         {
@@ -73,7 +73,9 @@ namespace UbntDiscovery
             get
             {
                 if (WirelessMode < WirelessModes.Length)
+                {
                     return WirelessModes[WirelessMode];
+                }
 
                 return String.Format("Unknown {0}", WirelessMode);
             }
@@ -98,6 +100,53 @@ namespace UbntDiscovery
         public override string ToString()
         {
             return String.Format("{1}:{0}", Hostname, FirstAddress.IpAddress);
+        }
+
+        public bool Equals(Device other)
+        {
+            if (Hostname != other.Hostname)
+            {
+                return false;
+            }
+            if (Platform != other.Platform)
+            {
+                return false;
+            }
+            if (Firmware != other.Firmware)
+            {
+                return false;
+            }
+            if (SSID != other.SSID)
+            {
+                return false;
+            }
+
+            if (Uptime != other.Uptime)
+            {
+                return false;
+            }
+            if (WirelessMode != other.WirelessMode)
+            {
+                return false;
+            }
+
+            int addressCount = Addresses.Count;
+            if (addressCount != other.Addresses.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < addressCount; i++)
+            {
+                DeviceAddress a = Addresses[i];
+                DeviceAddress b = other.Addresses[i];
+                if (!a.Equals(b))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
